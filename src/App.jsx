@@ -25,10 +25,10 @@ const slidesData = [
     type: 'setup',
     title: 'MySQL Setup: Run These Queries First!',
     setupCode: `
--- Drop tables if they exist to start fresh
+-- Drop existing tables if they exist (in reverse dependency order)
 DROP TABLE IF EXISTS Sales, Website_Visits, Orders, Customers, OldEmployees, NewEmployees, Employees, Departments, Products;
 
--- Create and Insert for Q1, Q5
+-- Create and Insert for Q1, Q4, Q5 (Salary ranking and Department analysis)
 CREATE TABLE Departments (DeptID INT PRIMARY KEY, DeptName VARCHAR(50));
 INSERT INTO Departments (DeptID, DeptName) VALUES (10, 'HR'), (20, 'IT'), (30, 'Sales');
 
@@ -37,9 +37,8 @@ INSERT INTO Employees (EmployeeID, Name, Department, Salary, DeptID) VALUES
 (1, 'Alice', 'HR', 60000, 10), (2, 'Bob', 'IT', 80000, 20), (3, 'Charlie', 'IT', 75000, 20),
 (4, 'David', 'HR', 62000, 10), (5, 'Eve', 'Sales', 90000, 30), (6, 'Frank', 'Sales', 85000, 30),
 (7, 'Grace', 'IT', 82000, 20);
-UPDATE Employees SET DeptID = 20 WHERE Name = 'Frank'; -- Correction from previous logic
 
--- Create and Insert for Q2, Q6
+-- Create and Insert for Q2 (Subquery with aggregate functions)
 CREATE TABLE Products (ProductID INT PRIMARY KEY, ProductName VARCHAR(50), Category VARCHAR(50), Price INT);
 INSERT INTO Products (ProductID, ProductName, Category, Price) VALUES
 (1, 'Laptop', 'Electronics', 1200), (2, 'Mouse', 'Electronics', 25), (3, 'T-shirt', 'Apparel', 20),
@@ -48,13 +47,13 @@ INSERT INTO Products (ProductID, ProductName, Category, Price) VALUES
 CREATE TABLE Sales (SaleID INT PRIMARY KEY, ProductID INT, QuantitySold INT, FOREIGN KEY (ProductID) REFERENCES Products(ProductID));
 INSERT INTO Sales (SaleID, ProductID, QuantitySold) VALUES (1, 1, 5), (2, 2, 50), (3, 1, 3), (4, 3, 20), (5, 2, 30);
 
--- Create and Insert for Q3
+-- Create and Insert for Q3 (Set operations with UNION)
 CREATE TABLE OldEmployees (EmployeeID INT PRIMARY KEY, Name VARCHAR(50));
 INSERT INTO OldEmployees (EmployeeID, Name) VALUES (1, 'Alice'), (2, 'Bob');
 CREATE TABLE NewEmployees (EmployeeID INT PRIMARY KEY, Name VARCHAR(50));
 INSERT INTO NewEmployees (EmployeeID, Name) VALUES (3, 'Charlie'), (4, 'David');
 
--- Create and Insert for Q4, Q8, Q9
+-- Create and Insert for Q4 (HAVING clause with JOIN and GROUP BY)
 CREATE TABLE Customers (CustomerID INT PRIMARY KEY, Name VARCHAR(50));
 INSERT INTO Customers (CustomerID, Name) VALUES (1, 'Alice'), (2, 'Bob'), (3, 'Charlie');
 
@@ -64,7 +63,7 @@ INSERT INTO Orders (OrderID, CustomerID, OrderDate, Amount, Status) VALUES
 (3, 1, '2023-02-10', 200.00, 'Shipped'), (4, 1, '2023-02-12', 50.00, 'Pending'),
 (5, 3, '2023-03-05', 300.00, 'Delivered');
 
--- Create and Insert for Q7
+-- Create and Insert for Q5 (Window functions with LAG)
 CREATE TABLE Website_Visits (VisitID INT PRIMARY KEY, UserID INT, VisitTimestamp DATETIME);
 INSERT INTO Website_Visits (VisitID, UserID, VisitTimestamp) VALUES
 (1, 101, '2023-10-01 09:00:00'), (2, 102, '2023-10-01 09:05:00'), (3, 101, '2023-10-01 09:10:00'),
@@ -72,6 +71,8 @@ INSERT INTO Website_Visits (VisitID, UserID, VisitTimestamp) VALUES
     `,
   },
   // --- Question 1 ---
+  // Salary ranking: Eve(90000), Frank(85000), Grace(82000), Bob(80000), Charlie(75000), David(62000), Alice(60000)
+  // Third highest: Grace with 82000
   {
     type: 'question',
     title: 'Question 1: Finding the Nth Highest Value',
@@ -79,15 +80,15 @@ INSERT INTO Website_Visits (VisitID, UserID, VisitTimestamp) VALUES
     question: 'Write a SQL query to find the employee with the third highest salary.',
     sampleTable: `
       <table className="w-full text-left border-collapse">
-        <thead><tr><th className="p-2 border">EmployeeID</th><th className="p-2 border">Name</th><th className="p-2 border">Department</th><th className="p-2 border">Salary</th></tr></thead>
+        <thead><tr><th className="p-2 border">EmployeeID</th><th className="p-2 border">Name</th><th className="p-2 border">Department</th><th className="p-2 border">Salary</th><th className="p-2 border">DeptID</th></tr></thead>
         <tbody>
-          <tr><td className="p-2 border">1</td><td className="p-2 border">Alice</td><td className="p-2 border">HR</td><td className="p-2 border">60000</td></tr>
-          <tr><td className="p-2 border">2</td><td className="p-2 border">Bob</td><td className="p-2 border">IT</td><td className="p-2 border">80000</td></tr>
-          <tr><td className="p-2 border">3</td><td className="p-2 border">Charlie</td><td className="p-2 border">IT</td><td className="p-2 border">75000</td></tr>
-          <tr><td className="p-2 border">4</td><td className="p-2 border">David</td><td className="p-2 border">HR</td><td className="p-2 border">62000</td></tr>
-          <tr><td className="p-2 border">5</td><td className="p-2 border">Eve</td><td className="p-2 border">Sales</td><td className="p-2 border">90000</td></tr>
-          <tr><td className="p-2 border">6</td><td className="p-2 border">Frank</td><td className="p-2 border">Sales</td><td className="p-2 border">85000</td></tr>
-          <tr><td className="p-2 border">7</td><td className="p-2 border">Grace</td><td className="p-2 border">IT</td><td className="p-2 border">82000</td></tr>
+          <tr><td className="p-2 border">1</td><td className="p-2 border">Alice</td><td className="p-2 border">HR</td><td className="p-2 border">60000</td><td className="p-2 border">10</td></tr>
+          <tr><td className="p-2 border">2</td><td className="p-2 border">Bob</td><td className="p-2 border">IT</td><td className="p-2 border">80000</td><td className="p-2 border">20</td></tr>
+          <tr><td className="p-2 border">3</td><td className="p-2 border">Charlie</td><td className="p-2 border">IT</td><td className="p-2 border">75000</td><td className="p-2 border">20</td></tr>
+          <tr><td className="p-2 border">4</td><td className="p-2 border">David</td><td className="p-2 border">HR</td><td className="p-2 border">62000</td><td className="p-2 border">10</td></tr>
+          <tr><td className="p-2 border">5</td><td className="p-2 border">Eve</td><td className="p-2 border">Sales</td><td className="p-2 border">90000</td><td className="p-2 border">30</td></tr>
+          <tr><td className="p-2 border">6</td><td className="p-2 border">Frank</td><td className="p-2 border">Sales</td><td className="p-2 border">85000</td><td className="p-2 border">30</td></tr>
+          <tr><td className="p-2 border">7</td><td className="p-2 border">Grace</td><td className="p-2 border">IT</td><td className="p-2 border">82000</td><td className="p-2 border">20</td></tr>
         </tbody>
       </table>
     `,
@@ -117,6 +118,8 @@ INSERT INTO Website_Visits (VisitID, UserID, VisitTimestamp) VALUES
     ]
   },
   // --- Question 2 ---
+  // Average price: (1200+25+20+50+75)/5 = 1370/5 = 274
+  // Only Laptop (1200) is above average
   {
     type: 'question',
     title: 'Question 2: Subqueries in the WHERE Clause',
@@ -210,6 +213,8 @@ INSERT INTO Website_Visits (VisitID, UserID, VisitTimestamp) VALUES
     ]
   },
     // --- Question 4 ---
+  // Employee counts: HR (DeptID 10): 2, IT (DeptID 20): 3, Sales (DeptID 30): 2
+  // Only IT has > 2 employees
   {
     type: 'question',
     title: 'Question 4: Filtering Aggregated Data with HAVING',
@@ -220,15 +225,15 @@ INSERT INTO Website_Visits (VisitID, UserID, VisitTimestamp) VALUES
         <div>
           <h4 className="font-semibold mb-2">Employees</h4>
           <table className="w-full text-left border-collapse">
-            <thead><tr><th className="p-2 border">Name</th><th className="p-2 border">DeptID</th></tr></thead>
+            <thead><tr><th className="p-2 border">EmployeeID</th><th className="p-2 border">Name</th><th className="p-2 border">DeptID</th></tr></thead>
             <tbody>
-              <tr><td className="p-2 border">Alice</td><td className="p-2 border">10</td></tr>
-              <tr><td className="p-2 border">Bob</td><td className="p-2 border">20</td></tr>
-              <tr><td className="p-2 border">Charlie</td><td className="p-2 border">20</td></tr>
-              <tr><td className="p-2 border">David</td><td className="p-2 border">10</td></tr>
-              <tr><td className="p-2 border">Eve</td><td className="p-2 border">30</td></tr>
-              <tr><td className="p-2 border">Frank</td><td className="p-2 border">20</td></tr>
-              <tr><td className="p-2 border">Grace</td><td className="p-2 border">20</td></tr>
+              <tr><td className="p-2 border">1</td><td className="p-2 border">Alice</td><td className="p-2 border">10</td></tr>
+              <tr><td className="p-2 border">2</td><td className="p-2 border">Bob</td><td className="p-2 border">20</td></tr>
+              <tr><td className="p-2 border">3</td><td className="p-2 border">Charlie</td><td className="p-2 border">20</td></tr>
+              <tr><td className="p-2 border">4</td><td className="p-2 border">David</td><td className="p-2 border">10</td></tr>
+              <tr><td className="p-2 border">5</td><td className="p-2 border">Eve</td><td className="p-2 border">30</td></tr>
+              <tr><td className="p-2 border">6</td><td className="p-2 border">Frank</td><td className="p-2 border">30</td></tr>
+              <tr><td className="p-2 border">7</td><td className="p-2 border">Grace</td><td className="p-2 border">20</td></tr>
             </tbody>
           </table>
         </div>
@@ -498,34 +503,44 @@ export default function App() {
       </main>
 
       {/* Footer / Navigation */}
-      <footer className="bg-white shadow-md p-4 flex flex-col sm:flex-row justify-center items-center space-y-2 sm:space-y-0 sm:space-x-4">
-        <button
-          onClick={goToPrev}
-          disabled={currentSlide === 0}
-          className="w-full sm:w-auto px-6 py-2 bg-gray-300 text-gray-800 font-semibold rounded-lg shadow-md hover:bg-gray-400 disabled:bg-gray-200 disabled:cursor-not-allowed disabled:text-gray-400 transition-colors"
-          aria-label="Go to previous slide"
-        >
-          Previous
-        </button>
-        
-        {isQuestionSlide && !showAnswer && (
+      <footer className="bg-white shadow-md p-4">
+        {/* Navigation Buttons */}
+        <div className="flex flex-col sm:flex-row justify-center items-center space-y-2 sm:space-y-0 sm:space-x-4 mb-3">
           <button
-            onClick={() => setShowAnswer(true)}
-            className="w-full sm:w-auto px-6 py-2 bg-green-500 text-white font-semibold rounded-lg shadow-md hover:bg-green-600 transition-colors"
-            aria-label="Show answer to current question"
+            onClick={goToPrev}
+            disabled={currentSlide === 0}
+            className="w-full sm:w-auto px-6 py-2 bg-gray-300 text-gray-800 font-semibold rounded-lg shadow-md hover:bg-gray-400 disabled:bg-gray-200 disabled:cursor-not-allowed disabled:text-gray-400 transition-colors"
+            aria-label="Go to previous slide"
           >
-            Show Answer
+            Previous
           </button>
-        )}
+          
+          {isQuestionSlide && !showAnswer && (
+            <button
+              onClick={() => setShowAnswer(true)}
+              className="w-full sm:w-auto px-6 py-2 bg-green-500 text-white font-semibold rounded-lg shadow-md hover:bg-green-600 transition-colors"
+              aria-label="Show answer to current question"
+            >
+              Show Answer
+            </button>
+          )}
+          
+          <button
+            onClick={goToNext}
+            disabled={currentSlide === slidesData.length - 1}
+            className="w-full sm:w-auto px-6 py-2 bg-blue-500 text-white font-semibold rounded-lg shadow-md hover:bg-blue-600 disabled:bg-gray-200 disabled:cursor-not-allowed disabled:text-gray-400 transition-colors"
+            aria-label="Go to next slide"
+          >
+            Next
+          </button>
+        </div>
         
-        <button
-          onClick={goToNext}
-          disabled={currentSlide === slidesData.length - 1}
-          className="w-full sm:w-auto px-6 py-2 bg-blue-500 text-white font-semibold rounded-lg shadow-md hover:bg-blue-600 disabled:bg-gray-200 disabled:cursor-not-allowed disabled:text-gray-400 transition-colors"
-          aria-label="Go to next slide"
-        >
-          Next
-        </button>
+        {/* Credit Line */}
+        <div className="text-center">
+          <p className="text-sm text-gray-500">
+            Made with ❤️ by <span className="font-semibold text-gray-700">Daniel Paul</span>
+          </p>
+        </div>
       </footer>
     </div>
   );
